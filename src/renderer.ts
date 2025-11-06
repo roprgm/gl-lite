@@ -1,8 +1,8 @@
-import type { GLContext } from "./types.js";
-import { GLBuffer, type GLBufferParams } from "./buffer.js";
-import { GLTexture, type GLTextureParams } from "./texture.js";
-import { GLFramebuffer } from "./framebuffer.js";
-import { GLProgram, type GLProgramDefinition } from "./program.js";
+import type { GLContext, GLResource } from "./types";
+import { GLBuffer, type GLBufferParams } from "./buffer";
+import { GLTexture, type GLTextureParams } from "./texture";
+import { GLFramebuffer } from "./framebuffer";
+import { GLProgram, type GLProgramDefinition } from "./program";
 
 export type GLRendererParams = {
   context?: GLContext;
@@ -13,6 +13,7 @@ export type GLRendererParams = {
 export class GLRenderer {
   gl: GLContext;
   programs: WeakMap<GLProgramDefinition, GLProgram>;
+  private resources = new Set<GLResource>();
 
   constructor(params: GLRendererParams = {}) {
     const canvas = params.canvas ?? document.createElement("canvas");
@@ -61,11 +62,14 @@ export class GLRenderer {
     }
     const program = new GLProgram(this.gl, definition);
     this.programs.set(definition as GLProgramDefinition, program as GLProgram);
+    this.resources.add(program as GLProgram);
     return program as GLProgram<Props>;
   }
 
   texture(params: Partial<GLTextureParams> = {}) {
-    return new GLTexture(this.gl, params);
+    const texture = new GLTexture(this.gl, params);
+    this.resources.add(texture);
+    return texture;
   }
 
   framebuffer(texture?: GLTexture): GLFramebuffer {
@@ -75,17 +79,22 @@ export class GLRenderer {
         height: this.canvas.height,
       });
     }
-    return new GLFramebuffer(this.gl, texture);
+    const framebuffer = new GLFramebuffer(this.gl, texture);
+    this.resources.add(framebuffer);
+    return framebuffer;
   }
 
   buffer(params: Partial<GLBufferParams> = {}) {
-    return new GLBuffer(this.gl, params);
+    const buffer = new GLBuffer(this.gl, params);
+    this.resources.add(buffer);
+    return buffer;
   }
 
   dispose() {
-    for (const program of Object.values(this.programs)) {
-      program.dispose();
+    for (const resource of this.resources) {
+      resource.dispose();
     }
+    this.resources.clear();
     this.programs = new WeakMap();
   }
 }

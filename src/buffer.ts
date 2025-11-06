@@ -1,6 +1,6 @@
-import type { GLContext } from "./types.js";
-import type { GLMap } from "./constants.js";
-import { glMap } from "./constants.js";
+import type { GLContext, GLResource } from "./types";
+import type { GLMap } from "./constants";
+import { glMap } from "./constants";
 
 export type GLBufferData = ArrayBufferView | ArrayLike<number> | null;
 
@@ -10,7 +10,7 @@ export type GLBufferParams = {
   data: GLBufferData;
 };
 
-export class GLBuffer {
+export class GLBuffer implements GLResource {
   target: keyof GLMap["bufferTarget"];
   usage: keyof GLMap["bufferUsage"];
 

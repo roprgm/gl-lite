@@ -1,21 +1,21 @@
 // Core types
-export type { GLContext } from "./types.js";
+export type { GLContext, GLResource } from "./types";
 
 // Constants
-export { glMap, type GLMap } from "./constants.js";
+export { glMap, type GLMap } from "./constants";
 
 // Buffer
-export { GLBuffer, type GLBufferData, type GLBufferParams } from "./buffer.js";
+export { GLBuffer, type GLBufferData, type GLBufferParams } from "./buffer";
 
 // Texture
 export {
   GLTexture,
   type GLTextureSource,
   type GLTextureParams,
-} from "./texture.js";
+} from "./texture";
 
 // Framebuffer
-export { GLFramebuffer } from "./framebuffer.js";
+export { GLFramebuffer } from "./framebuffer";
 
 // Program
 export {
@@ -26,7 +26,7 @@ export {
   type GLUniformValue,
   type GLUniforms,
   type GLProgramDefinition,
-} from "./program.js";
+} from "./program";
 
 // Renderer
-export { GLRenderer, type GLRendererParams } from "./renderer.js";
+export { GLRenderer, type GLRendererParams } from "./renderer";

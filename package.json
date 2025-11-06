@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/roprgm/gl-lite/issues"
   },
+  "packageManager": "bun@1.2.21",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",

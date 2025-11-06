@@ -1,6 +1,6 @@
-import type { GLContext } from "./types.js";
-import type { GLMap } from "./constants.js";
-import { glMap } from "./constants.js";
+import type { GLContext, GLResource } from "./types";
+import type { GLMap } from "./constants";
+import { glMap } from "./constants";
 
 export type GLTextureSource = TexImageSource | ArrayBufferView | null;
 
@@ -17,7 +17,7 @@ export type GLTextureParams = {
   flipY: boolean;
 };
 
-export class GLTexture {
+export class GLTexture implements GLResource {
   readonly gl: GLContext;
   readonly handle: WebGLTexture;
 

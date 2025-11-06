@@ -1,4 +1,4 @@
-import type { GLContext } from "./types.js";
+import type { GLContext } from "./types";
 
 // Map WebGL constants to human-readable values
 export const glMap = (gl: GLContext) => ({

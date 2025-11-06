@@ -1,7 +1,7 @@
-import type { GLContext } from "./types.js";
-import { GLTexture } from "./texture.js";
+import type { GLContext, GLResource } from "./types";
+import { GLTexture } from "./texture";
 
-export class GLFramebuffer {
+export class GLFramebuffer implements GLResource {
   readonly gl: GLContext;
   readonly texture: GLTexture;
   readonly handle: WebGLFramebuffer;

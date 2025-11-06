@@ -1,8 +1,8 @@
-import type { GLContext } from "./types.js";
-import type { GLMap } from "./constants.js";
-import { glMap } from "./constants.js";
-import { GLBuffer } from "./buffer.js";
-import { GLTexture } from "./texture.js";
+import type { GLContext, GLResource } from "./types";
+import type { GLMap } from "./constants";
+import { glMap } from "./constants";
+import { GLBuffer } from "./buffer";
+import { GLTexture } from "./texture";
 
 export type GLBlendConfig = {
   enabled?: boolean;
@@ -63,7 +63,7 @@ type GLProgramAttribute<Props> = {
   value: GLAttribute | ((props: Props) => GLAttribute);
 };
 
-export class GLProgram<Props extends {} = {}> {
+export class GLProgram<Props extends {} = {}> implements GLResource {
   readonly gl: GLContext;
   private readonly handle: WebGLProgram;
 
