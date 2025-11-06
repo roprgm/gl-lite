@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gl-lite - A minimalist WebGL library for the browser</title>
+    <meta
+      name="description"
+      content="A lightweight, type-safe WebGL wrapper that makes it easy to work with WebGL/WebGL2 in the browser."
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Dark mode detection
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        document.documentElement.classList.add("dark");
+      }
+
+      // Listen for system theme changes
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+          if (e.matches) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        });
+    </script>
+  </head>
+  <body class="bg-white text-black antialiased dark:bg-black dark:text-white">
+    <!-- Header -->
+    <header class="border-b border-gray-200 dark:border-gray-800">
+      <nav class="mx-auto max-w-6xl px-6 py-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xl font-semibold">gl-lite</span>
+          <div class="flex gap-6">
+            <a
+              href="https://github.com/roprgm/gl-lite"
+              class="text-sm text-gray-600 transition hover:text-black dark:text-gray-400 dark:hover:text-white"
+            >
+              GitHub
+            </a>
+            <a
+              href="#quick-start"
+              class="text-sm text-gray-600 transition hover:text-black dark:text-gray-400 dark:hover:text-white"
+            >
+              Documentation
+            </a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="mx-auto max-w-6xl px-6 py-20">
+      <h1 class="mb-6 text-5xl font-semibold leading-tight tracking-tight">
+        A minimalist WebGL<br />library for the browser
+      </h1>
+      <p class="mb-8 max-w-xl text-lg text-gray-600 dark:text-gray-400">
+        Lightweight, type-safe WebGL wrapper with a clean, modern API.
+      </p>
+      <div class="flex gap-4">
+        <a
+          href="#quick-start"
+          class="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+        >
+          Get Started
+        </a>
+        <a
+          href="https://github.com/roprgm/gl-lite"
+          class="rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium transition hover:border-gray-900 dark:border-gray-700 dark:hover:border-gray-500"
+        >
+          GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="border-t border-gray-200 py-16 dark:border-gray-800">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="mb-16">
+          <h2
+            class="mb-2 text-sm font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500"
+          >
+            Features
+          </h2>
+        </div>
+        <div class="grid gap-12 md:grid-cols-3">
+          <div>
+            <h3 class="mb-2 font-medium">Minimalist API</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Simple, intuitive interface for WebGL operations
+            </p>
+          </div>
+          <div>
+            <h3 class="mb-2 font-medium">Zero Dependencies</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Pure TypeScript with no external dependencies
+            </p>
+          </div>
+          <div>
+            <h3 class="mb-2 font-medium">Type-Safe</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Full TypeScript support with comprehensive types
+            </p>
+          </div>
+          <div>
+            <h3 class="mb-2 font-medium">Modern</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Built for ES modules and modern browsers
+            </p>
+          </div>
+          <div>
+            <h3 class="mb-2 font-medium">Flexible</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Low-level control when you need it
+            </p>
+          </div>
+          <div>
+            <h3 class="mb-2 font-medium">Lightweight</h3>
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              ~10KB compiled, small bundle size
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Installation -->
+    <section
+      id="quick-start"
+      class="border-t border-gray-200 py-16 dark:border-gray-800"
+    >
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="mb-16">
+          <h2
+            class="mb-2 text-sm font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500"
+          >
+            Quick Start
+          </h2>
+        </div>
+
+        <div class="space-y-8">
+          <div>
+            <h3 class="mb-4 font-medium">Installation</h3>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">npm install gl-lite</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-medium">Basic Usage</h3>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">import { GLRenderer } from 'gl-lite';
+
+// Create a renderer
+const renderer = new GLRenderer({
+  canvas: document.querySelector('canvas'),
+});
+
+// Create a shader program
+const program = renderer.program({
+  vert: `...`,
+  frag: `...`,
+});
+
+// Render
+renderer.clear([0, 0, 0, 1]);
+program.draw();</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Overview -->
+    <section class="border-t border-gray-200 py-16 dark:border-gray-800">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="mb-16">
+          <h2
+            class="mb-2 text-sm font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500"
+          >
+            API Overview
+          </h2>
+        </div>
+        <div class="grid gap-8 md:grid-cols-2">
+          <div>
+            <h3 class="mb-4 font-mono text-sm font-medium">GLRenderer</h3>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Main entry point for creating a WebGL context and managing
+              resources.
+            </p>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">new GLRenderer(params)
+renderer.resize(width, height)
+renderer.clear([r, g, b, a])
+renderer.program(definition)
+renderer.texture(params)
+renderer.buffer(params)
+renderer.framebuffer(texture)</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-mono text-sm font-medium">GLProgram</h3>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Manages shaders, uniforms, and attributes.
+            </p>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">program.draw(props)
+program.use(() => { ... })
+program.dispose()</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-mono text-sm font-medium">GLTexture</h3>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Handles texture creation and management.
+            </p>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">renderer.texture(params)
+texture.bind(unit)
+texture.update(params)
+texture.resize(width, height)
+texture.dispose()</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-mono text-sm font-medium">GLBuffer</h3>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Manages vertex and index buffers.
+            </p>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">renderer.buffer(params)
+buffer.update(data)
+buffer.use(() => { ... })
+buffer.dispose()</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-mono text-sm font-medium">GLFramebuffer</h3>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Render-to-texture functionality.
+            </p>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">renderer.framebuffer(texture)
+fbo.use(() => { ... })
+fbo.dispose()</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Examples -->
+    <section class="border-t border-gray-200 py-16 dark:border-gray-800">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="mb-16">
+          <h2
+            class="mb-2 text-sm font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500"
+          >
+            Examples
+          </h2>
+        </div>
+
+        <div class="space-y-12">
+          <div>
+            <h3 class="mb-4 font-medium">Dynamic Uniforms</h3>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">const program = renderer.program({
+  frag: `
+    uniform float time;
+    uniform vec2 resolution;
+    // ... shader code
+  `,
+  uniforms: {
+    time: (props) => props.time,
+    resolution: (props) => [props.width, props.height],
+  },
+});
+
+program.draw({ time, width, height });</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-medium">Texture Loading</h3>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">const image = new Image();
+image.onload = () => {
+  const texture = renderer.texture({
+    data: image,
+    flipY: true,
+  });
+  
+  program.draw({ tex: texture });
+};
+image.src = 'image.png';</code></pre>
+          </div>
+
+          <div>
+            <h3 class="mb-4 font-medium">Custom Geometry</h3>
+            <pre
+              class="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950"
+            ><code class="text-sm">const positions = new Float32Array([
+  -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+]);
+
+const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+const program = renderer.program({
+  attributes: {
+    position: {
+      buffer: renderer.buffer({ data: positions }),
+      size: 2,
+    },
+  },
+  elements: renderer.buffer({
+    target: 'element',
+    data: indices,
+  }),
+  count: indices.length,
+});
+
+program.draw();</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 py-12 dark:border-gray-800">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            MIT © 2025
+            <a
+              href="https://twitter.com/roprgm"
+              class="transition hover:text-black dark:hover:text-white"
+              >roprgm</a
+            >
+          </span>
+          <div class="flex gap-6">
+            <a
+              href="https://github.com/roprgm/gl-lite"
+              class="text-sm text-gray-600 transition hover:text-black dark:text-gray-400 dark:hover:text-white"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://github.com/roprgm/gl-lite/issues"
+              class="text-sm text-gray-600 transition hover:text-black dark:text-gray-400 dark:hover:text-white"
+            >
+              Issues
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

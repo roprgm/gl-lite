@@ -33,7 +33,8 @@
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --clean --watch",
     "format": "prettier --write .",
-    "example": "bun run build && bunx serve -p 3000"
+    "example": "bun run build && bunx serve -p 3000",
+    "preview": "bunx serve web -p 3000"
   },
   "devDependencies": {
     "@types/bun": "latest",

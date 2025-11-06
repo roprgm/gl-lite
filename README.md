@@ -318,8 +318,22 @@ bun run dev
 # Run the example (builds and serves on http://localhost:3000)
 bun run example
 
+# Preview the landing page
+bun run preview
+
 # Format code
 bun run format
+```
+
+### Project Structure
+
+```
+gl-lite/
+├── src/           # Library source code
+├── dist/          # Built library (generated)
+├── web/           # Landing page (deployed to gl-lite.dev)
+├── example.html   # Local example/demo
+└── README.md
 ```
 
 ## Links
