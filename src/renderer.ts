@@ -6,7 +6,7 @@ import { GLProgram, type GLProgramDefinition } from "./program";
 
 export type GLRendererParams = {
   context?: GLContext;
-  canvas?: HTMLCanvasElement;
+  canvas?: HTMLCanvasElement | null;
   attributes?: WebGLContextAttributes;
 };
 

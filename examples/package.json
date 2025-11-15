@@ -1,0 +1,18 @@
+{
+  "name": "gl-lite-examples",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "tailwindcss": "^4.1.14",
+    "vite": "^5.4.8"
+  },
+  "dependencies": {
+    "gl-lite": "link:gl-lite"
+  }
+}
