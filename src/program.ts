@@ -38,6 +38,14 @@ export type GLUniforms<Props = {}> = Record<
   GLUniformValue | ((props: Props) => GLUniformValue)
 >;
 
+export type MissingHandler = (msg: string)=>void;
+export const CommonMissingHandlers = {
+  "error": (msg: string)=>{throw new Error(msg);},
+  "warning": (msg: string)=>{console.warn(msg);},
+  "ignore": ()=>{}
+} as const satisfies Record<string,MissingHandler>;
+export type CommonMissingHandler = keyof typeof CommonMissingHandlers;
+
 export type GLProgramDefinition<Props extends {} = {}> = {
   vert?: string;
   frag?: string;
@@ -49,6 +57,7 @@ export type GLProgramDefinition<Props extends {} = {}> = {
   attributes?: GLAttributes<Props>;
   uniforms?: GLUniforms<Props>;
   blend?: GLBlendConfig;
+  missingHandler?: MissingHandler | CommonMissingHandler;
 };
 
 type GLProgramUniform<Props> = {
@@ -80,6 +89,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
   private uniforms: Record<string, GLProgramUniform<Props>> = {};
   private attributes: Record<string, GLProgramAttribute<Props>> = {};
   private attributeCache = new Map<number, GLAttribute>();
+  private missingHandler: MissingHandler;
 
   static readonly DEFAULT_VERT = /* glsl */ `
     precision mediump float;
@@ -133,6 +143,12 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     this.offset = definition.offset ?? 0;
     this.indexType = definition.indexType ?? "uint16";
 
+    if (typeof definition.missingHandler == "function") {
+      this.missingHandler = definition.missingHandler;
+    } else {
+      this.missingHandler = CommonMissingHandlers[definition.missingHandler ?? "error"];
+    }
+
     this.handle = this.buildProgram(gl, vert, frag);
 
     if (definition.uniforms) {
@@ -149,7 +165,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     for (const [name, value] of Object.entries(uniforms)) {
       const location = gl.getUniformLocation(this.handle, name);
       if (!location) {
-        throw new Error(`Uniform not found: ${name}`);
+        this.missingHandler(`Uniform not found: ${name}`);
+        continue;
       }
       result[name] = { name, location, value };
     }
@@ -161,7 +178,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     for (const [name, value] of Object.entries(attributes)) {
       const location = gl.getAttribLocation(this.handle, name);
       if (location === -1) {
-        throw new Error(`Attribute not found: ${name}`);
+        this.missingHandler(`Attribute not found: ${name}`);
+        continue;
       }
       result[name] = { name, location, value };
     }
