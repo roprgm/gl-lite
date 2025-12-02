@@ -52,6 +52,7 @@ export const glMap = (gl: GLContext) => ({
     lines: gl.LINES,
     lineStrip: gl.LINE_STRIP,
     lineLoop: gl.LINE_LOOP,
+    triangles: gl.TRIANGLES,
     triangleStrip: gl.TRIANGLE_STRIP,
     triangleFan: gl.TRIANGLE_FAN,
   },
