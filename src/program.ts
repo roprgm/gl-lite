@@ -65,6 +65,13 @@ type GLProgramAttribute<Props> = {
   value: GLAttribute | ((props: Props) => GLAttribute);
 };
 
+function parseBlendParam<K>(key: K | [K, K]): [K, K] {
+  if (Array.isArray(key)) {
+    return key;
+  }
+  return [key, key];
+}
+
 export class GLProgram<Props extends {} = {}> implements GLResource {
   readonly gl: GLContext;
   private readonly handle: WebGLProgram;
@@ -378,21 +385,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     if (this.blend?.enabled) {
       this.gl.enable(this.gl.BLEND);
       
-      let srcRGB: BlendFactor;
-      let srcAlpha: BlendFactor;
-      if (Array.isArray(this.blend.srcFactor)) {
-        [srcRGB, srcAlpha] = this.blend.srcFactor;
-      } else {
-        srcRGB = srcAlpha = this.blend.srcFactor ?? "one";
-      }
-
-      let dstRGB: BlendFactor;
-      let dstAlpha: BlendFactor;
-      if (Array.isArray(this.blend.dstFactor)) {
-        [dstRGB, dstAlpha] = this.blend.dstFactor;
-      } else {
-        dstRGB = dstAlpha = this.blend.dstFactor ?? "zero";
-      }
+      let [srcRGB, srcAlpha] = parseBlendParam(this.blend.srcFactor ?? "one");
+      let [dstRGB, dstAlpha] = parseBlendParam(this.blend.dstFactor ?? "zero");
       this.gl.blendFuncSeparate(
         glMap(this.gl).blendFactor[srcRGB],
         glMap(this.gl).blendFactor[dstRGB],
@@ -400,13 +394,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
         glMap(this.gl).blendFactor[dstAlpha],
       );
 
-      let modeRGB: BlendEquation;
-      let modeAlpha: BlendEquation;
-      if (Array.isArray(this.blend.equation)) {
-        [modeRGB, modeAlpha] = this.blend.equation;
-      } else {
-        modeRGB = modeAlpha = this.blend.equation ?? "add";
-      }
+      let [modeRGB, modeAlpha] = parseBlendParam(this.blend.equation ?? "add");
       this.gl.blendEquationSeparate(
         glMap(this.gl).blendEquation[modeRGB],
         glMap(this.gl).blendEquation[modeAlpha],
