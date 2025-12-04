@@ -1,6 +1,6 @@
 {
   "name": "gl-lite",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A lite WebGL library for the browser",
   "author": "https://github.com/roprgm",
   "license": "MIT",
