@@ -4,11 +4,13 @@ import { glMap } from "./constants";
 import { GLBuffer } from "./buffer";
 import { GLTexture } from "./texture";
 
+type BlendFactor = keyof GLMap["blendFactor"];
+type BlendEquation = keyof GLMap["blendEquation"];
 export type GLBlendConfig = {
   enabled?: boolean;
-  srcFactor?: keyof GLMap["blendFactor"];
-  dstFactor?: keyof GLMap["blendFactor"];
-  equation?: keyof GLMap["blendEquation"];
+  srcFactor?: BlendFactor | [BlendFactor, BlendFactor]
+  dstFactor?: BlendFactor | [BlendFactor, BlendFactor]
+  equation?: BlendEquation | [BlendEquation, BlendEquation];
 };
 
 export type GLAttribute = {
@@ -62,6 +64,13 @@ type GLProgramAttribute<Props> = {
   location: number;
   value: GLAttribute | ((props: Props) => GLAttribute);
 };
+
+function parseBlendParam<K>(key: K | [K, K]): [K, K] {
+  if (Array.isArray(key)) {
+    return key;
+  }
+  return [key, key];
+}
 
 export class GLProgram<Props extends {} = {}> implements GLResource {
   readonly gl: GLContext;
@@ -375,12 +384,20 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
   private applyBlend() {
     if (this.blend?.enabled) {
       this.gl.enable(this.gl.BLEND);
-      this.gl.blendFunc(
-        glMap(this.gl).blendFactor[this.blend.srcFactor ?? "one"],
-        glMap(this.gl).blendFactor[this.blend.dstFactor ?? "zero"],
+      
+      const [srcRGB, srcAlpha] = parseBlendParam(this.blend.srcFactor ?? "one");
+      const [dstRGB, dstAlpha] = parseBlendParam(this.blend.dstFactor ?? "zero");
+      this.gl.blendFuncSeparate(
+        glMap(this.gl).blendFactor[srcRGB],
+        glMap(this.gl).blendFactor[dstRGB],
+        glMap(this.gl).blendFactor[srcAlpha],
+        glMap(this.gl).blendFactor[dstAlpha],
       );
-      this.gl.blendEquation(
-        glMap(this.gl).blendEquation[this.blend.equation ?? "add"],
+
+      const [modeRGB, modeAlpha] = parseBlendParam(this.blend.equation ?? "add");
+      this.gl.blendEquationSeparate(
+        glMap(this.gl).blendEquation[modeRGB],
+        glMap(this.gl).blendEquation[modeAlpha],
       );
     } else {
       this.gl.disable(this.gl.BLEND);
