@@ -385,8 +385,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     if (this.blend?.enabled) {
       this.gl.enable(this.gl.BLEND);
       
-      let [srcRGB, srcAlpha] = parseBlendParam(this.blend.srcFactor ?? "one");
-      let [dstRGB, dstAlpha] = parseBlendParam(this.blend.dstFactor ?? "zero");
+      const [srcRGB, srcAlpha] = parseBlendParam(this.blend.srcFactor ?? "one");
+      const [dstRGB, dstAlpha] = parseBlendParam(this.blend.dstFactor ?? "zero");
       this.gl.blendFuncSeparate(
         glMap(this.gl).blendFactor[srcRGB],
         glMap(this.gl).blendFactor[dstRGB],
@@ -394,7 +394,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
         glMap(this.gl).blendFactor[dstAlpha],
       );
 
-      let [modeRGB, modeAlpha] = parseBlendParam(this.blend.equation ?? "add");
+      const [modeRGB, modeAlpha] = parseBlendParam(this.blend.equation ?? "add");
       this.gl.blendEquationSeparate(
         glMap(this.gl).blendEquation[modeRGB],
         glMap(this.gl).blendEquation[modeAlpha],
