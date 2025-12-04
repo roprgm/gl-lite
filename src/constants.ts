@@ -41,6 +41,15 @@ export const glMap = (gl: GLContext) => ({
     oneMinusSrcColor: gl.ONE_MINUS_SRC_COLOR,
     dstColor: gl.DST_COLOR,
     oneMinusDstColor: gl.ONE_MINUS_DST_COLOR,
+    srcAlpha: gl.SRC_ALPHA,
+    oneMinusSrcAlpha: gl.ONE_MINUS_SRC_ALPHA,
+    dstAlpha: gl.DST_ALPHA,
+    oneMinusDstAlpha: gl.ONE_MINUS_DST_ALPHA,
+    constantColor: gl.CONSTANT_COLOR,
+    oneMinusConstantColor: gl.ONE_MINUS_CONSTANT_COLOR,
+    constantAlpha: gl.CONSTANT_ALPHA,
+    oneMinusConstantAlpha: gl.ONE_MINUS_CONSTANT_ALPHA,
+    srcAlphaSaturate: gl.SRC_ALPHA_SATURATE
   },
   blendEquation: {
     add: gl.FUNC_ADD,
