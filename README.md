@@ -2,9 +2,38 @@
 
 > A minimalist WebGL library for the browser
 
-**gl-lite** is a lightweight, type-safe WebGL wrapper that makes it easy to work with WebGL/WebGL2 in the browser.
+**gl-lite** is a lightweight, type-safe WebGL wrapper that makes it easy to work with WebGL/WebGL2 in the browser. It provides a clean, declarative API for creating shader programs, managing textures, buffers, and framebuffers without the boilerplate of raw WebGL.
 
 🌐 **[gl-lite.dev](https://gl-lite.dev)**
+
+## What is gl-lite?
+
+**gl-lite** is a thin abstraction layer over WebGL/WebGL2 that simplifies common graphics programming tasks. Unlike full-featured 3D engines (Three.js, Babylon.js) or high-level frameworks, gl-lite focuses on providing a minimal, type-safe interface for direct WebGL operations. It's perfect for:
+
+- **Shader-based graphics** - Creating custom shader effects, visualizations, and GPU-accelerated computations
+- **2D/3D rendering** - Building custom rendering pipelines without the overhead of a full 3D engine
+- **WebGL utilities** - Managing WebGL resources (textures, buffers, programs) with automatic cleanup
+- **Learning WebGL** - Understanding WebGL concepts with a cleaner API than raw WebGL
+- **Performance-critical graphics** - When you need direct GPU control without framework overhead
+- **Render-to-texture** - Post-processing effects, off-screen rendering, and multi-pass rendering
+
+## When to use gl-lite
+
+✅ **Use gl-lite when:**
+
+- You need direct WebGL control with less boilerplate
+- You're building custom shader-based visualizations or effects
+- You want type safety and modern TypeScript APIs
+- You need a lightweight library (zero dependencies, small bundle)
+- You're creating 2D graphics, data visualizations, or procedural art
+- You want to learn WebGL with a cleaner API
+
+❌ **Consider alternatives when:**
+
+- You need a full 3D engine with scene graphs, cameras, and lighting (use Three.js, Babylon.js)
+- You're building complex 3D applications with models, animations, and physics
+- You need built-in geometry primitives and materials
+- You want a high-level framework that handles everything for you
 
 ## Features
 
@@ -14,6 +43,9 @@
 - 🚀 **Modern** - Built for ES modules and modern browsers
 - 🔧 **Flexible** - Low-level control when you need it
 - 🪶 **Lightweight** - Small bundle size
+- 🧹 **Resource management** - Automatic cleanup and disposal of WebGL resources
+- 💾 **Program caching** - Efficient program reuse via WeakMap-based caching
+- 🔄 **Dynamic uniforms/attributes** - Support for function-based uniforms and attributes
 
 ## Installation
 
@@ -294,6 +326,23 @@ const filter = map.filter.linear;
 // Instead of gl.TRIANGLES
 const primitive = map.primitive.triangles;
 ```
+
+## Comparison with Other Libraries
+
+| Feature           | gl-lite                              | Three.js        | Raw WebGL       |
+| ----------------- | ------------------------------------ | --------------- | --------------- |
+| Bundle size       | ~10KB                                | ~500KB+         | 0KB             |
+| Dependencies      | Zero                                 | Many            | None            |
+| Learning curve    | Low                                  | Medium          | High            |
+| Type safety       | Full TypeScript                      | Partial         | None            |
+| API style         | Declarative                          | Object-oriented | Imperative      |
+| Use case          | Custom shaders, lightweight graphics | Full 3D engine  | Maximum control |
+| Scene graph       | ❌                                   | ✅              | ❌              |
+| Built-in geometry | ❌                                   | ✅              | ❌              |
+| Shader management | ✅                                   | ✅              | Manual          |
+| Resource cleanup  | ✅                                   | ✅              | Manual          |
+
+**gl-lite** sits between raw WebGL and full-featured engines, providing just enough abstraction to reduce boilerplate while maintaining direct control over the GPU.
 
 ## Browser Support
 
