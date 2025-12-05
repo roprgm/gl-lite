@@ -19,7 +19,11 @@ export class GLBuffer implements GLResource {
 
   constructor(gl: GLContext, params: Partial<GLBufferParams> = {}) {
     this.gl = gl;
-    this.handle = gl.createBuffer();
+    const handle = gl.createBuffer();
+    if (!handle) {
+      throw new Error("Failed to create buffer");
+    }
+    this.handle = handle;
 
     this.target = params.target ?? "array";
     this.usage = params.usage ?? "static";

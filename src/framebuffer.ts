@@ -9,7 +9,11 @@ export class GLFramebuffer implements GLResource {
   constructor(gl: GLContext, texture: GLTexture) {
     this.gl = gl;
     this.texture = texture;
-    this.handle = gl.createFramebuffer();
+    const handle = gl.createFramebuffer();
+    if (!handle) {
+      throw new Error("Failed to create framebuffer");
+    }
+    this.handle = handle;
 
     // bind
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle);
