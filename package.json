@@ -34,10 +34,14 @@
     "dev": "tsup src/index.ts --format esm --dts --clean --watch",
     "format": "prettier --write .",
     "example": "bun run build && bunx serve -p 3000",
-    "preview": "bunx serve web -p 3000"
+    "preview": "bunx serve web -p 3000",
+    "test": "bun test/run.ts",
+    "test:dist": "bun run build && bun test/run.ts --target dist",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "playwright": "1.56.1",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0"
   },

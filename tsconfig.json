@@ -9,7 +9,11 @@
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "gl-lite": ["./src/index.ts"]
+    },
+    "baseUrl": "."
   },
   "include": ["src", "test"],
   "types": ["bun-types"]
