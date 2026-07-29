@@ -1,7 +1,7 @@
 import type { GLContext } from "./types";
 
 // Map WebGL constants to human-readable values
-export const glMap = (gl: GLContext) => ({
+const build = (gl: GLContext) => ({
   format: {
     rgba: gl.RGBA,
     rgb: gl.RGB,
@@ -65,14 +65,6 @@ export const glMap = (gl: GLContext) => ({
     triangleStrip: gl.TRIANGLE_STRIP,
     triangleFan: gl.TRIANGLE_FAN,
   },
-  drawMode: {
-    points: gl.POINTS,
-    lines: gl.LINES,
-    lineStrip: gl.LINE_STRIP,
-    lineLoop: gl.LINE_LOOP,
-    triangleStrip: gl.TRIANGLE_STRIP,
-    triangleFan: gl.TRIANGLE_FAN,
-  },
   bufferTarget: {
     array: gl.ARRAY_BUFFER,
     element: gl.ELEMENT_ARRAY_BUFFER,
@@ -84,4 +76,17 @@ export const glMap = (gl: GLContext) => ({
   },
 });
 
-export type GLMap = ReturnType<typeof glMap>;
+export type GLMap = ReturnType<typeof build>;
+
+// The map is pure lookup, so it is built once per context rather than
+// rebuilt on every call — draw() alone reaches for it several times.
+const cache = new WeakMap<GLContext, GLMap>();
+
+export const glMap = (gl: GLContext): GLMap => {
+  let map = cache.get(gl);
+  if (!map) {
+    map = build(gl);
+    cache.set(gl, map);
+  }
+  return map;
+};

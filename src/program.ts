@@ -251,27 +251,24 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
       }
     }
 
-    const floatArray =
-      value instanceof Float32Array ? value : new Float32Array(value);
-
     switch (length) {
       case 1:
-        gl.uniform1fv(location, floatArray);
+        gl.uniform1fv(location, value);
         return;
       case 2:
-        gl.uniform2fv(location, floatArray);
+        gl.uniform2fv(location, value);
         return;
       case 3:
-        gl.uniform3fv(location, floatArray);
+        gl.uniform3fv(location, value);
         return;
       case 4:
-        gl.uniform4fv(location, floatArray);
+        gl.uniform4fv(location, value);
         return;
       case 9:
-        gl.uniformMatrix3fv(location, false, floatArray);
+        gl.uniformMatrix3fv(location, false, value);
         return;
       case 16:
-        gl.uniformMatrix4fv(location, false, floatArray);
+        gl.uniformMatrix4fv(location, false, value);
         return;
       default:
         throw new Error("Unsupported float uniform array length");
@@ -282,13 +279,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     gl: GLContext,
     location: WebGLUniformLocation,
     value: GLUniformValue,
-    textureUnit?: number,
   ) {
-    if (textureUnit !== undefined) {
-      gl.uniform1i(location, textureUnit);
-      return;
-    }
-
     if (typeof value === "number") {
       gl.uniform1f(location, value);
       return;

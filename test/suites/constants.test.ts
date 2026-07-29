@@ -68,6 +68,13 @@ describe("glMap", () => {
     expect(map.indexType.uint32).toBe(gl.UNSIGNED_INT);
   });
 
+  it("builds the map once per context", () => {
+    const first = useRenderer();
+    const second = useRenderer();
+    expect(glMap(first.gl)).toBe(glMap(first.gl));
+    expect(glMap(first.gl) === glMap(second.gl)).toBe(false);
+  });
+
   it("maps blend equations", () => {
     const { gl } = useRenderer();
     const map = glMap(gl);
