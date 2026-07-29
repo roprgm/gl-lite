@@ -52,9 +52,9 @@ export class GLBuffer implements GLResource {
 
     // Matches the default `indexType` of "uint16"; anything wider has to be
     // passed as a typed array so the draw call can be told about it too.
-    if (values.some((value) => value > 0xffff)) {
+    if (values.some((value) => value < 0 || value > 0xffff)) {
       throw new Error(
-        "Index values above 65535 must be passed as a Uint32Array, drawn with indexType: 'uint32'",
+        "Index values must be between 0 and 65535; wider indices need a Uint32Array drawn with indexType: 'uint32'",
       );
     }
     return new Uint16Array(values);

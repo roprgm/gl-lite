@@ -112,6 +112,20 @@ describe("GLRenderer", () => {
     expect(gl.isTexture(texture.handle)).toBe(false);
   });
 
+  it("tolerates disposing the same resource twice", () => {
+    const { renderer } = useRenderer();
+    const texture = renderer.texture();
+    const fbo = renderer.framebuffer(texture, { depth: true });
+
+    expect(() => {
+      fbo.dispose();
+      fbo.dispose();
+      texture.dispose();
+      renderer.dispose();
+      renderer.dispose();
+    }).notToThrow();
+  });
+
   it("works against a WebGL1 context", () => {
     const gl = useWebGL1Context();
     const renderer = new GLRenderer({ context: gl });

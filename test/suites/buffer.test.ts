@@ -89,11 +89,14 @@ describe("GLBuffer", () => {
     expectPixel(readCenter(gl, 64, 64), [255, 0, 255, 255]);
   });
 
-  it("reports index values too wide for the default index type", () => {
+  it("reports index values outside the default index type", () => {
     const { renderer } = useRenderer();
     expect(() =>
       renderer.buffer({ target: "element", data: [0, 1, 70000] }),
     ).toThrow("Uint32Array");
+    expect(() =>
+      renderer.buffer({ target: "element", data: [0, 1, -1] }),
+    ).toThrow("between 0 and 65535");
   });
 
   it("accepts an array-like that is not a real array", () => {
