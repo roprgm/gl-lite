@@ -24,12 +24,22 @@ function assertComplete(gl: GLContext) {
   );
 }
 
+export type GLFramebufferParams = {
+  /** Attaches a depth buffer so passes into this target can depth test. */
+  depth: boolean;
+};
+
 export class GLFramebuffer implements GLResource {
   readonly gl: GLContext;
   readonly texture: GLTexture;
   readonly handle: WebGLFramebuffer;
+  readonly depth: WebGLRenderbuffer | null = null;
 
-  constructor(gl: GLContext, texture: GLTexture) {
+  constructor(
+    gl: GLContext,
+    texture: GLTexture,
+    params: Partial<GLFramebufferParams> = {},
+  ) {
     this.gl = gl;
     this.texture = texture;
     const handle = gl.createFramebuffer();
@@ -48,13 +58,39 @@ export class GLFramebuffer implements GLResource {
         this.texture.handle,
         0,
       );
+      if (params.depth) {
+        this.depth = this.attachDepth();
+      }
       assertComplete(gl);
     } catch (error) {
-      gl.deleteFramebuffer(this.handle);
+      this.dispose();
       throw error;
     } finally {
       gl.bindFramebuffer(gl.FRAMEBUFFER, previous);
     }
+  }
+
+  private attachDepth(): WebGLRenderbuffer {
+    const gl = this.gl;
+    const buffer = gl.createRenderbuffer();
+    if (!buffer) {
+      throw new Error("Failed to create depth buffer");
+    }
+    gl.bindRenderbuffer(gl.RENDERBUFFER, buffer);
+    gl.renderbufferStorage(
+      gl.RENDERBUFFER,
+      gl.DEPTH_COMPONENT16,
+      this.texture.width,
+      this.texture.height,
+    );
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.DEPTH_ATTACHMENT,
+      gl.RENDERBUFFER,
+      buffer,
+    );
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    return buffer;
   }
 
   use(fn: () => void) {
@@ -75,5 +111,8 @@ export class GLFramebuffer implements GLResource {
   /** Frees the framebuffer only: the texture belongs to whoever created it. */
   dispose() {
     this.gl.deleteFramebuffer(this.handle);
+    if (this.depth) {
+      this.gl.deleteRenderbuffer(this.depth);
+    }
   }
 }

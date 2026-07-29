@@ -51,6 +51,8 @@ export type GLProgramDefinition<Props extends {} = {}> = {
   attributes?: GLAttributes<Props>;
   uniforms?: GLUniforms<Props>;
   blend?: GLBlendConfig;
+  /** Enables depth testing. Needs a target that has a depth buffer. */
+  depth?: boolean;
 };
 
 type GLProgramUniform<Props> = {
@@ -126,6 +128,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     enabled: false,
   };
 
+  private depth = false;
+
   private elements?: GLBuffer;
   private primitive: keyof GLMap["primitive"];
   private count: number;
@@ -180,6 +184,8 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     if (definition.blend) {
       this.blend = definition.blend;
     }
+
+    this.depth = definition.depth ?? false;
 
     this.elements = definition.elements;
     this.primitive = definition.primitive ?? "triangleStrip";
@@ -456,6 +462,15 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     }
   }
 
+  private applyDepth() {
+    const gl = this.gl;
+    if (this.depth) {
+      gl.enable(gl.DEPTH_TEST);
+    } else {
+      gl.disable(gl.DEPTH_TEST);
+    }
+  }
+
   private drawElements(elements: GLBuffer) {
     if (elements.target !== "element") {
       throw new Error("Indexed draws require an element buffer");
@@ -493,6 +508,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
   draw(props: Props = {} as Props) {
     this.use(() => {
       this.applyBlend();
+      this.applyDepth();
       this.applyUniforms(props);
       const locations = this.applyAttributes(props);
 

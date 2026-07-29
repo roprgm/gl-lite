@@ -1,7 +1,7 @@
 import type { GLContext, GLResource } from "./types";
 import { GLBuffer, type GLBufferParams } from "./buffer";
 import { GLTexture, type GLTextureParams } from "./texture";
-import { GLFramebuffer } from "./framebuffer";
+import { GLFramebuffer, type GLFramebufferParams } from "./framebuffer";
 import { GLProgram, type GLProgramDefinition } from "./program";
 
 export type GLRendererParams = {
@@ -23,7 +23,6 @@ export class GLRenderer {
         antialias: true,
         alpha: true,
         preserveDrawingBuffer: true,
-        depth: false,
         ...params.attributes,
       });
 
@@ -50,9 +49,12 @@ export class GLRenderer {
   }
 
   clear(color = [0, 0, 0, 1]) {
+    const gl = this.gl;
     const [r, g, b, a] = color;
-    this.gl.clearColor(r, g, b, a);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    gl.clearColor(r, g, b, a);
+    // Clearing depth on a target that has none is a no-op, so this stays
+    // correct whether or not a depth buffer is in play.
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   }
 
   /**
@@ -92,14 +94,17 @@ export class GLRenderer {
    * A framebuffer never disposes its texture — whoever created the texture
    * owns it. When one is created here it is tracked like any other resource.
    */
-  framebuffer(texture?: GLTexture): GLFramebuffer {
+  framebuffer(
+    texture?: GLTexture,
+    params: Partial<GLFramebufferParams> = {},
+  ): GLFramebuffer {
     const target =
       texture ??
       this.texture({
         width: this.canvas.width,
         height: this.canvas.height,
       });
-    return this.track(new GLFramebuffer(this.gl, target));
+    return this.track(new GLFramebuffer(this.gl, target, params));
   }
 
   buffer(params: Partial<GLBufferParams> = {}) {

@@ -15,7 +15,7 @@ export {
 } from "./texture";
 
 // Framebuffer
-export { GLFramebuffer } from "./framebuffer";
+export { GLFramebuffer, type GLFramebufferParams } from "./framebuffer";
 
 // Program
 export {
