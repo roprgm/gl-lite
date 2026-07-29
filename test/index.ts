@@ -5,16 +5,21 @@
 
 import { runAll, type TestResult } from "./harness";
 
-import "./suites/attributes.test";
-import "./suites/buffer.test";
-import "./suites/depth.test";
-import "./suites/framebuffer.test";
-import "./suites/instancing.test";
-import "./suites/program.test";
-import "./suites/renderer.test";
-import "./suites/texture.test";
-import "./suites/state.test";
-import "./suites/constants.test";
+// Imported for their `describe` side effects. The package declares
+// `sideEffects: false`, which is true of src/ but would let the bundler drop
+// bare imports here, so each suite is awaited as a value instead.
+await Promise.all([
+  import("./suites/attributes.test"),
+  import("./suites/buffer.test"),
+  import("./suites/constants.test"),
+  import("./suites/depth.test"),
+  import("./suites/framebuffer.test"),
+  import("./suites/instancing.test"),
+  import("./suites/program.test"),
+  import("./suites/renderer.test"),
+  import("./suites/state.test"),
+  import("./suites/texture.test"),
+]);
 
 declare global {
   interface Window {

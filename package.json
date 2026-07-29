@@ -24,14 +24,15 @@
       "default": "./dist/index.js"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts --format esm --dts --clean --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "format": "prettier --write .",
     "example": "bun run build && bunx serve -p 3000",
     "preview": "bunx serve web -p 3000",
