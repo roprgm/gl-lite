@@ -70,6 +70,30 @@ describe("GLFramebuffer", () => {
     expect(gl.getParameter(gl.FRAMEBUFFER_BINDING)).toBe(null);
   });
 
+  it("reports an attachment that cannot be rendered to", () => {
+    const { renderer } = useRenderer();
+    // LUMINANCE is a valid texture format but is not colour-renderable, so
+    // the framebuffer would silently swallow every draw.
+    const target = renderer.texture({
+      width: 8,
+      height: 8,
+      format: "luminance",
+    });
+    expect(() => renderer.framebuffer(target)).toThrow("incomplete");
+  });
+
+  it("restores the previous binding while being constructed", () => {
+    const { renderer, gl } = useRenderer();
+    const outer = renderer.framebuffer(
+      renderer.texture({ width: 16, height: 16 }),
+    );
+
+    outer.use(() => {
+      renderer.framebuffer(renderer.texture({ width: 8, height: 8 }));
+      expect(gl.getParameter(gl.FRAMEBUFFER_BINDING)).toBe(outer.handle);
+    });
+  });
+
   it("releases the underlying GL object on dispose", () => {
     const { renderer, gl } = useRenderer();
     const fbo = renderer.framebuffer(renderer.texture({ width: 8, height: 8 }));

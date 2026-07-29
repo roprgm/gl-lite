@@ -1,6 +1,29 @@
 import type { GLContext, GLResource } from "./types";
 import { GLTexture } from "./texture";
 
+/**
+ * An incomplete framebuffer silently discards every draw, so the reason is
+ * worth naming at construction rather than leaving as a blank render target.
+ */
+function assertComplete(gl: GLContext) {
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  if (status === gl.FRAMEBUFFER_COMPLETE) {
+    return;
+  }
+  const reasons: Record<number, string> = {
+    [gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT]:
+      "the attached texture cannot be rendered to in this format",
+    [gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT]: "nothing is attached",
+    [gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS]:
+      "the attachments have different sizes",
+    [gl.FRAMEBUFFER_UNSUPPORTED]:
+      "this combination of formats is unsupported here",
+  };
+  throw new Error(
+    `Framebuffer is incomplete: ${reasons[status] ?? `status ${status}`}`,
+  );
+}
+
 export class GLFramebuffer implements GLResource {
   readonly gl: GLContext;
   readonly texture: GLTexture;
@@ -15,16 +38,23 @@ export class GLFramebuffer implements GLResource {
     }
     this.handle = handle;
 
-    // bind
+    const previous = gl.getParameter(gl.FRAMEBUFFER_BINDING);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      this.texture.handle,
-      0,
-    );
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    try {
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        this.texture.handle,
+        0,
+      );
+      assertComplete(gl);
+    } catch (error) {
+      gl.deleteFramebuffer(this.handle);
+      throw error;
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, previous);
+    }
   }
 
   use(fn: () => void) {
