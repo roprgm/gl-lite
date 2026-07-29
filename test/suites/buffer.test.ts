@@ -65,6 +65,61 @@ describe("GLBuffer", () => {
     expectPixel(readCenter(gl, 64, 64), [0, 0, 255, 255]);
   });
 
+  it("accepts a plain number array as index data", () => {
+    const { renderer, gl } = useRenderer();
+    const positions = renderer.buffer({
+      data: [-1, -1, 1, -1, 1, 1, -1, 1],
+    });
+    const elements = renderer.buffer({
+      target: "element",
+      data: [0, 1, 2, 0, 2, 3],
+    });
+    const program = renderer.program({
+      frag: solidFrag(1, 0, 1),
+      attributes: { position: { buffer: positions, size: 2 } },
+      elements,
+      primitive: "triangles",
+      count: 6,
+    });
+
+    renderer.clear([0, 0, 0, 1]);
+    program.draw();
+
+    expectNoGLError(gl, "after an indexed draw from a plain number array");
+    expectPixel(readCenter(gl, 64, 64), [255, 0, 255, 255]);
+  });
+
+  it("reports index values too wide for the default index type", () => {
+    const { renderer } = useRenderer();
+    expect(() =>
+      renderer.buffer({ target: "element", data: [0, 1, 70000] }),
+    ).toThrow("Uint32Array");
+  });
+
+  it("accepts an array-like that is not a real array", () => {
+    const { renderer, gl } = useRenderer();
+    const arrayLike = {
+      length: 8,
+      0: -1,
+      1: -1,
+      2: 1,
+      3: -1,
+      4: -1,
+      5: 1,
+      6: 1,
+      7: 1,
+    };
+    const buffer = renderer.buffer({ data: arrayLike });
+    const program = renderer.program({
+      frag: solidFrag(0, 1, 1),
+      attributes: { position: { buffer, size: 2 } },
+    });
+
+    renderer.clear([0, 0, 0, 1]);
+    program.draw();
+    expectPixel(readCenter(gl, 64, 64), [0, 255, 255, 255]);
+  });
+
   it("binds and unbinds around use()", () => {
     const { renderer, gl } = useRenderer();
     const buffer = renderer.buffer({ data: FULLSCREEN_QUAD });
