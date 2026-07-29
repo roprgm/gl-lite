@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.21
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run typecheck
+
+      - run: bunx prettier --check .
+
+      # The suite renders in a real browser; SwiftShader supplies WebGL2 on
+      # the GPU-less runner.
+      - run: bunx playwright install --with-deps chromium
+
+      - name: Test against src
+        run: bun run test
+
+      - name: Test against the built package
+        run: bun run test:dist
+
+      - name: Report bundle size
+        run: |
+          raw=$(wc -c < dist/index.js)
+          gzip=$(gzip -c dist/index.js | wc -c)
+          echo "dist/index.js: ${raw} B raw, ${gzip} B gzip" >> "$GITHUB_STEP_SUMMARY"
