@@ -8,8 +8,8 @@ type BlendFactor = keyof GLMap["blendFactor"];
 type BlendEquation = keyof GLMap["blendEquation"];
 export type GLBlendConfig = {
   enabled?: boolean;
-  srcFactor?: BlendFactor | [BlendFactor, BlendFactor]
-  dstFactor?: BlendFactor | [BlendFactor, BlendFactor]
+  srcFactor?: BlendFactor | [BlendFactor, BlendFactor];
+  dstFactor?: BlendFactor | [BlendFactor, BlendFactor];
   equation?: BlendEquation | [BlendEquation, BlendEquation];
 };
 
@@ -384,9 +384,11 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
   private applyBlend() {
     if (this.blend?.enabled) {
       this.gl.enable(this.gl.BLEND);
-      
+
       const [srcRGB, srcAlpha] = parseBlendParam(this.blend.srcFactor ?? "one");
-      const [dstRGB, dstAlpha] = parseBlendParam(this.blend.dstFactor ?? "zero");
+      const [dstRGB, dstAlpha] = parseBlendParam(
+        this.blend.dstFactor ?? "zero",
+      );
       this.gl.blendFuncSeparate(
         glMap(this.gl).blendFactor[srcRGB],
         glMap(this.gl).blendFactor[dstRGB],
@@ -394,7 +396,9 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
         glMap(this.gl).blendFactor[dstAlpha],
       );
 
-      const [modeRGB, modeAlpha] = parseBlendParam(this.blend.equation ?? "add");
+      const [modeRGB, modeAlpha] = parseBlendParam(
+        this.blend.equation ?? "add",
+      );
       this.gl.blendEquationSeparate(
         glMap(this.gl).blendEquation[modeRGB],
         glMap(this.gl).blendEquation[modeAlpha],

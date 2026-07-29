@@ -44,15 +44,23 @@ export class GLBuffer implements GLResource {
   }
 
   use(fn: () => void) {
-    if (!this.handle) return;
-    const targetEnum = glMap(this.gl).bufferTarget[this.target];
-    this.gl.bindBuffer(targetEnum, this.handle);
-    fn();
-    this.gl.bindBuffer(targetEnum, null);
+    const gl = this.gl;
+    const targetEnum = glMap(gl).bufferTarget[this.target];
+    const bindingEnum =
+      this.target === "array"
+        ? gl.ARRAY_BUFFER_BINDING
+        : gl.ELEMENT_ARRAY_BUFFER_BINDING;
+    const previous = gl.getParameter(bindingEnum);
+
+    gl.bindBuffer(targetEnum, this.handle);
+    try {
+      fn();
+    } finally {
+      gl.bindBuffer(targetEnum, previous);
+    }
   }
 
   update(data: GLBufferData) {
-    if (!this.handle) return;
     const targetEnum = glMap(this.gl).bufferTarget[this.target];
     const usageEnum = glMap(this.gl).bufferUsage[this.usage];
     const payload = this.normalizeData(data);

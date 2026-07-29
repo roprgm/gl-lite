@@ -28,10 +28,18 @@ export class GLFramebuffer implements GLResource {
   }
 
   use(fn: () => void) {
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.handle);
-    this.gl.viewport(0, 0, this.texture.width, this.texture.height);
-    fn();
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    const gl = this.gl;
+    const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+    const [x, y, width, height] = gl.getParameter(gl.VIEWPORT);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.handle);
+    gl.viewport(0, 0, this.texture.width, this.texture.height);
+    try {
+      fn();
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
+      gl.viewport(x, y, width, height);
+    }
   }
 
   dispose() {
