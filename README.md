@@ -111,12 +111,12 @@ const renderer = new GLRenderer({
 });
 
 renderer.resize(width, height); // Resize canvas and viewport
-renderer.clear([r, g, b, a]); // Clear with color
+renderer.clear([r, g, b, a]); // Clear colour and depth
 renderer.program(definition); // Create/cache a program
 renderer.texture(params); // Create a texture
-renderer.framebuffer(texture); // Create a framebuffer
+renderer.framebuffer(texture, { depth }); // Create a framebuffer
 renderer.buffer(params); // Create a buffer
-renderer.dispose(); // Clean up resources
+renderer.dispose(); // Clean up every resource it created
 ```
 
 ### GLProgram
@@ -133,6 +133,8 @@ const program = renderer.program({
   count: number,                    // Vertex count
   offset: number,                   // Vertex offset
   blend: GLBlendConfig,             // Blend configuration
+  depth: boolean,                   // Enable depth testing
+  instances: number,                // Instanced draw count (WebGL2)
   elements: GLBuffer,               // Index buffer (optional)
 });
 
@@ -140,6 +142,12 @@ program.draw(props);                // Draw with optional props
 program.use(() => { ... });         // Use program in callback
 program.dispose();                  // Clean up
 ```
+
+Uniform types come from the linked program, not from the shape of the value
+you pass, so `int`, `bool`, `ivec`, `mat2`–`mat4`, samplers and float arrays
+all write correctly. A uniform or attribute the shader does not use is
+reported with `console.warn` and skipped — shader compilers drop unused
+declarations, and that should not stop your program from running.
 
 ### GLTexture
 
@@ -173,13 +181,18 @@ Manages vertex and index buffers.
 const buffer = renderer.buffer({
   target: 'array' | 'element',      // Buffer type
   usage: 'static' | 'dynamic' | 'stream',
-  data: Float32Array | number[],    // Buffer data
+  data: TypedArray | number[],      // Buffer data
 });
 
 buffer.update(data);                // Update buffer data
 buffer.use(() => { ... });          // Bind buffer in callback
 buffer.dispose();                   // Clean up
 ```
+
+Typed arrays are uploaded as they are. A plain number array has no inherent
+type, so it takes one from the target: `float` for vertex data, `uint16` for
+indices. Indices wider than that need an explicit `Uint32Array` together with
+`indexType: 'uint32'`.
 
 ### GLFramebuffer
 
@@ -194,8 +207,15 @@ fbo.use(() => {
   program.draw();
 });
 
-fbo.dispose(); // Clean up (also disposes texture)
+fbo.dispose(); // Clean up (the texture is not disposed)
 ```
+
+A framebuffer frees only its own GL object — the texture belongs to whoever
+created it. A render target created for you by `renderer.framebuffer()` is
+still cleaned up by `renderer.dispose()`.
+
+Pass `{ depth: true }` to attach a depth buffer when the pass needs depth
+testing.
 
 ## Examples
 
@@ -291,6 +311,43 @@ const program = renderer.program({
 program.draw();
 ```
 
+### Instanced Drawing
+
+```typescript
+const program = renderer.program({
+  vert: `
+    attribute vec2 position;
+    attribute vec2 offset;
+    void main() {
+      gl_Position = vec4(position * 0.1 + offset, 0.0, 1.0);
+    }
+  `,
+  frag: `
+    precision mediump float;
+    void main() { gl_FragColor = vec4(1.0); }
+  `,
+  attributes: {
+    position: { buffer: quad, size: 2 },
+    // Advances once per instance instead of once per vertex.
+    offset: { buffer: offsets, size: 2, divisor: 1 },
+  },
+  instances: 1000,
+});
+```
+
+### Depth Testing
+
+```typescript
+const program = renderer.program({
+  vert: shader,
+  frag: shader,
+  depth: true,
+});
+
+// Render targets need a depth buffer of their own.
+const fbo = renderer.framebuffer(texture, { depth: true });
+```
+
 ## Types
 
 gl-lite is fully typed with TypeScript. All classes and functions have comprehensive type definitions:
@@ -331,7 +388,7 @@ const primitive = map.primitive.triangles;
 
 | Feature           | gl-lite                              | Three.js        | Raw WebGL       |
 | ----------------- | ------------------------------------ | --------------- | --------------- |
-| Bundle size       | ~10KB                                | ~500KB+         | 0KB             |
+| Bundle size       | ~6.5KB gzipped                       | ~150KB+ gzipped | 0KB             |
 | Dependencies      | Zero                                 | Many            | None            |
 | Learning curve    | Low                                  | Medium          | High            |
 | Type safety       | Full TypeScript                      | Partial         | None            |
@@ -346,11 +403,15 @@ const primitive = map.primitive.triangles;
 
 ## Browser Support
 
-gl-lite works in all modern browsers that support WebGL or WebGL2:
+`GLRenderer` requests a WebGL2 context, which is available in:
 
 - Chrome/Edge 56+
 - Firefox 51+
 - Safari 15+
+
+The API itself works on WebGL1 too — pass your own context via
+`new GLRenderer({ context })`. Instanced drawing is the one feature that
+requires WebGL2.
 
 ## Development
 
@@ -364,7 +425,19 @@ bun run build
 # Watch mode for development
 bun run dev
 
-# Run the example (builds and serves on http://localhost:3000)
+# Type check
+bun run typecheck
+
+# Run the test suite in a headless browser
+bun run test
+
+# Run the same suite against the built package
+bun run test:dist
+
+# Run the examples (Vite, resolves gl-lite from source)
+cd examples && bun install && bun run dev
+
+# Run the standalone demo page (builds and serves on http://localhost:3000)
 bun run example
 
 # Preview the landing page
@@ -374,14 +447,21 @@ bun run preview
 bun run format
 ```
 
+Tests render in a real browser with a real WebGL context and assert on the
+pixels that come out, which is the only way to catch the state bugs that
+matter here. Playwright drives Chromium; on a machine without a GPU it falls
+back to SwiftShader, so no special hardware is needed.
+
 ### Project Structure
 
 ```
 gl-lite/
 ├── src/           # Library source code
+├── test/          # Browser test suite and its runner
+├── examples/      # Vite examples app
 ├── dist/          # Built library (generated)
 ├── web/           # Landing page (deployed to gl-lite.dev)
-├── example.html   # Local example/demo
+├── example.html   # Standalone demo page
 └── README.md
 ```
 
