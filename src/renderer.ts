@@ -55,39 +55,55 @@ export class GLRenderer {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
   }
 
+  /**
+   * Registers a resource for bulk cleanup, and unregisters it again when it is
+   * disposed on its own so a long-running app does not accumulate dead
+   * wrappers.
+   */
+  private track<T extends GLResource>(resource: T, onDispose?: () => void): T {
+    this.resources.add(resource);
+    const dispose = resource.dispose.bind(resource);
+    resource.dispose = () => {
+      this.resources.delete(resource);
+      onDispose?.();
+      dispose();
+    };
+    return resource;
+  }
+
   program<Props extends {} = {}>(definition: GLProgramDefinition<Props>) {
-    const cached = this.programs.get(definition as GLProgramDefinition);
+    const key = definition as GLProgramDefinition;
+    const cached = this.programs.get(key);
     if (cached) {
-      return cached;
+      return cached as GLProgram<Props>;
     }
-    const program = new GLProgram(this.gl, definition);
-    this.programs.set(definition as GLProgramDefinition, program as GLProgram);
-    this.resources.add(program as GLProgram);
-    return program as GLProgram<Props>;
+    const program = this.track(new GLProgram(this.gl, definition), () =>
+      this.programs.delete(key),
+    );
+    this.programs.set(key, program as GLProgram);
+    return program;
   }
 
   texture(params: Partial<GLTextureParams> = {}) {
-    const texture = new GLTexture(this.gl, params);
-    this.resources.add(texture);
-    return texture;
+    return this.track(new GLTexture(this.gl, params));
   }
 
+  /**
+   * A framebuffer never disposes its texture — whoever created the texture
+   * owns it. When one is created here it is tracked like any other resource.
+   */
   framebuffer(texture?: GLTexture): GLFramebuffer {
-    if (!texture) {
-      texture = this.texture({
+    const target =
+      texture ??
+      this.texture({
         width: this.canvas.width,
         height: this.canvas.height,
       });
-    }
-    const framebuffer = new GLFramebuffer(this.gl, texture);
-    this.resources.add(framebuffer);
-    return framebuffer;
+    return this.track(new GLFramebuffer(this.gl, target));
   }
 
   buffer(params: Partial<GLBufferParams> = {}) {
-    const buffer = new GLBuffer(this.gl, params);
-    this.resources.add(buffer);
-    return buffer;
+    return this.track(new GLBuffer(this.gl, params));
   }
 
   dispose() {

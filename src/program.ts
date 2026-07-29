@@ -74,7 +74,7 @@ function parseBlendParam<K>(key: K | [K, K]): [K, K] {
 
 export class GLProgram<Props extends {} = {}> implements GLResource {
   readonly gl: GLContext;
-  private readonly handle: WebGLProgram;
+  readonly handle: WebGLProgram;
 
   private blend: GLBlendConfig = {
     enabled: false,

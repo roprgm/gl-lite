@@ -42,8 +42,8 @@ export class GLFramebuffer implements GLResource {
     }
   }
 
+  /** Frees the framebuffer only: the texture belongs to whoever created it. */
   dispose() {
     this.gl.deleteFramebuffer(this.handle);
-    this.texture.dispose();
   }
 }
