@@ -9,6 +9,7 @@ import "./suites/attributes.test";
 import "./suites/buffer.test";
 import "./suites/depth.test";
 import "./suites/framebuffer.test";
+import "./suites/instancing.test";
 import "./suites/program.test";
 import "./suites/renderer.test";
 import "./suites/texture.test";

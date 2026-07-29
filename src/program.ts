@@ -20,6 +20,8 @@ export type GLAttribute = {
   normalized?: boolean;
   stride?: number;
   offset?: number;
+  /** Advance this attribute once per N instances instead of per vertex. */
+  divisor?: number;
 };
 
 export type GLAttributes<Props = {}> = Record<
@@ -53,6 +55,8 @@ export type GLProgramDefinition<Props extends {} = {}> = {
   blend?: GLBlendConfig;
   /** Enables depth testing. Needs a target that has a depth buffer. */
   depth?: boolean;
+  /** Draws this many instances per call. Requires a WebGL2 context. */
+  instances?: number;
 };
 
 type GLProgramUniform<Props> = {
@@ -131,6 +135,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
   private depth = false;
 
   private elements?: GLBuffer;
+  private instances?: number;
   private primitive: keyof GLMap["primitive"];
   private count: number;
   private offset: number;
@@ -188,6 +193,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     this.depth = definition.depth ?? false;
 
     this.elements = definition.elements;
+    this.instances = definition.instances;
     this.primitive = definition.primitive ?? "triangleStrip";
     this.count = definition.count ?? 4;
     this.offset = definition.offset ?? 0;
@@ -412,7 +418,18 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
         stride,
         offset,
       );
+      if (attribute.divisor) {
+        this.instanced().vertexAttribDivisor(location, attribute.divisor);
+      }
     });
+  }
+
+  /** Instanced drawing has no WebGL1 equivalent without an extension. */
+  private instanced(): WebGL2RenderingContext {
+    if (!("drawArraysInstanced" in this.gl)) {
+      throw new Error("Instanced drawing requires a WebGL2 context");
+    }
+    return this.gl as WebGL2RenderingContext;
   }
 
   /**
@@ -480,13 +497,32 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     const type = glMap(this.gl).indexType[this.indexType ?? "uint16"];
 
     elements.use(() => {
-      this.gl.drawElements(mode, this.count ?? 4, type, this.offset ?? 0);
+      if (this.instances === undefined) {
+        this.gl.drawElements(mode, this.count, type, this.offset);
+      } else {
+        this.instanced().drawElementsInstanced(
+          mode,
+          this.count,
+          type,
+          this.offset,
+          this.instances,
+        );
+      }
     });
   }
 
   private drawArrays() {
     const mode = glMap(this.gl).primitive[this.primitive];
-    this.gl.drawArrays(mode, this.offset ?? 0, this.count ?? 4);
+    if (this.instances === undefined) {
+      this.gl.drawArrays(mode, this.offset, this.count);
+    } else {
+      this.instanced().drawArraysInstanced(
+        mode,
+        this.offset,
+        this.count,
+        this.instances,
+      );
+    }
   }
 
   use(fn: () => void) {
@@ -519,8 +555,14 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
           this.drawArrays();
         }
       } finally {
+        const gl2 =
+          "vertexAttribDivisor" in this.gl
+            ? (this.gl as WebGL2RenderingContext)
+            : null;
         for (const location of locations) {
           this.gl.disableVertexAttribArray(location);
+          // Divisors outlive the array itself, so they reset here too.
+          gl2?.vertexAttribDivisor(location, 0);
         }
       }
     });
