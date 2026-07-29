@@ -88,7 +88,6 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
 
   private uniforms: Record<string, GLProgramUniform<Props>> = {};
   private attributes: Record<string, GLProgramAttribute<Props>> = {};
-  private attributeCache = new Map<number, GLAttribute>();
 
   static readonly DEFAULT_VERT = /* glsl */ `
     precision mediump float;
@@ -362,23 +361,24 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     });
   }
 
+  /**
+   * Vertex attribute arrays are global context state, not program state, so
+   * every draw sets up exactly the arrays it needs and the caller tears them
+   * down again. Returns the locations that were enabled.
+   */
   private applyAttributes(props: Props) {
     const gl = this.gl;
+    const locations: number[] = [];
     for (const attribute of Object.values(this.attributes)) {
       const value =
         typeof attribute.value === "function"
           ? attribute.value(props)
           : attribute.value;
 
-      const cached = this.attributeCache.get(attribute.location);
-
-      if (cached === value) {
-        continue;
-      }
-
       this.writeAttribute(gl, attribute.location, value);
-      this.attributeCache.set(attribute.location, value);
+      locations.push(attribute.location);
     }
+    return locations;
   }
 
   private applyBlend() {
@@ -446,12 +446,18 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     this.use(() => {
       this.applyBlend();
       this.applyUniforms(props);
-      this.applyAttributes(props);
+      const locations = this.applyAttributes(props);
 
-      if (this.elements) {
-        this.drawElements(this.elements);
-      } else {
-        this.drawArrays();
+      try {
+        if (this.elements) {
+          this.drawElements(this.elements);
+        } else {
+          this.drawArrays();
+        }
+      } finally {
+        for (const location of locations) {
+          this.gl.disableVertexAttribArray(location);
+        }
       }
     });
   }

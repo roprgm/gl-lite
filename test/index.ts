@@ -5,6 +5,7 @@
 
 import { runAll, type TestResult } from "./harness";
 
+import "./suites/attributes.test";
 import "./suites/buffer.test";
 import "./suites/framebuffer.test";
 import "./suites/program.test";
