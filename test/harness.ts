@@ -70,6 +70,19 @@ export async function runAll(): Promise<TestResult[]> {
   return results;
 }
 
+/** Runs `fn` with console.warn captured, returning what it emitted. */
+export function captureWarnings(fn: () => void): string[] {
+  const original = console.warn;
+  const messages: string[] = [];
+  console.warn = (...args: unknown[]) => messages.push(args.join(" "));
+  try {
+    fn();
+  } finally {
+    console.warn = original;
+  }
+  return messages;
+}
+
 // --- assertions ---------------------------------------------------------
 
 function stringify(value: unknown): string {

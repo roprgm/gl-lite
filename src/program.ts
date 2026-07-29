@@ -56,6 +56,8 @@ export type GLProgramDefinition<Props extends {} = {}> = {
 type GLProgramUniform<Props> = {
   name: string;
   location: WebGLUniformLocation;
+  /** The GLSL type reported by the linker, not one guessed from the value. */
+  type: number;
   value: GLUniformValue | ((props: Props) => GLUniformValue);
 };
 
@@ -70,6 +72,50 @@ function parseBlendParam<K>(key: K | [K, K]): [K, K] {
     return key;
   }
   return [key, key];
+}
+
+function warn(message: string) {
+  console.warn(`gl-lite: ${message}`);
+}
+
+type NumericUniform = Exclude<GLUniformValue, GLTexture>;
+
+function toNumbers(value: NumericUniform): ArrayLike<number> {
+  if (typeof value === "number") return [value];
+  if (typeof value === "boolean") return [value ? 1 : 0];
+  return value;
+}
+
+/**
+ * Checks a value against the component count of its declared type. A
+ * wrong-sized value is otherwise only reported as a GL error nobody reads.
+ * Typed arrays are passed straight through so per-frame writes do not copy.
+ */
+function checkSize(value: NumericUniform, perElement: number, name: string) {
+  const length = typeof value === "object" ? value.length : 1;
+  if (length === 0 || length % perElement !== 0) {
+    throw new Error(
+      `Uniform "${name}" expects a multiple of ${perElement} values, received ${length}`,
+    );
+  }
+}
+
+function floats(
+  value: NumericUniform,
+  perElement: number,
+  name: string,
+): Float32List {
+  checkSize(value, perElement, name);
+  return value instanceof Float32Array ? value : Array.from(toNumbers(value));
+}
+
+function ints(
+  value: NumericUniform,
+  perElement: number,
+  name: string,
+): Int32List {
+  checkSize(value, perElement, name);
+  return value instanceof Int32Array ? value : Array.from(toNumbers(value));
 }
 
 export class GLProgram<Props extends {} = {}> implements GLResource {
@@ -148,28 +194,62 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     }
 
     if (attributes) {
-      this.attributes = this.buildAttributes(gl, attributes);
+      this.attributes = this.buildAttributes(
+        gl,
+        attributes,
+        definition.attributes !== undefined,
+      );
     }
   }
 
+  /**
+   * Uniform types come from the linked program rather than from the shape of
+   * the JavaScript value, so an `int`, a `sampler` and a `float[9]` are all
+   * written correctly instead of being guessed at.
+   *
+   * A uniform the shader does not use is reported and skipped, not fatal: the
+   * compiler drops unused uniforms, which happens constantly while a shader is
+   * still being written.
+   */
   private buildUniforms(gl: GLContext, uniforms: GLUniforms<Props>) {
+    const declared = new Map<string, number>();
+    const active = gl.getProgramParameter(this.handle, gl.ACTIVE_UNIFORMS);
+    for (let index = 0; index < active; index += 1) {
+      const info = gl.getActiveUniform(this.handle, index);
+      if (info) {
+        // Array uniforms are reported as "name[0]".
+        declared.set(info.name.replace(/\[0\]$/, ""), info.type);
+      }
+    }
+
     const result: Record<string, GLProgramUniform<Props>> = {};
     for (const [name, value] of Object.entries(uniforms)) {
       const location = gl.getUniformLocation(this.handle, name);
-      if (!location) {
-        throw new Error(`Uniform not found: ${name}`);
+      const type = declared.get(name);
+      if (!location || type === undefined) {
+        warn(`uniform "${name}" is not used by the shader, skipping it`);
+        continue;
       }
-      result[name] = { name, location, value };
+      result[name] = { name, location, type, value };
     }
     return result;
   }
 
-  private buildAttributes(gl: GLContext, attributes: GLAttributes<Props>) {
+  private buildAttributes(
+    gl: GLContext,
+    attributes: GLAttributes<Props>,
+    userSupplied: boolean,
+  ) {
     const result: Record<string, GLProgramAttribute<Props>> = {};
     for (const [name, value] of Object.entries(attributes)) {
       const location = gl.getAttribLocation(this.handle, name);
       if (location === -1) {
-        throw new Error(`Attribute not found: ${name}`);
+        // Only worth mentioning when the caller asked for this attribute;
+        // the built-in fullscreen quad is supplied whether it fits or not.
+        if (userSupplied) {
+          warn(`attribute "${name}" is not used by the shader, skipping it`);
+        }
+        continue;
       }
       result[name] = { name, location, value };
     }
@@ -224,83 +304,61 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
     return program;
   }
 
-  private writeUniformArray(
-    gl: GLContext,
-    location: WebGLUniformLocation,
-    value: Float32Array | Int32Array,
-  ): void {
-    const length = value.length;
-
-    if (value instanceof Int32Array) {
-      const intArray = value;
-      switch (length) {
-        case 1:
-          gl.uniform1iv(location, intArray);
-          return;
-        case 2:
-          gl.uniform2iv(location, intArray);
-          return;
-        case 3:
-          gl.uniform3iv(location, intArray);
-          return;
-        case 4:
-          gl.uniform4iv(location, intArray);
-          return;
-        default:
-          throw new Error("Unsupported integer uniform array length");
-      }
-    }
-
-    switch (length) {
-      case 1:
-        gl.uniform1fv(location, value);
-        return;
-      case 2:
-        gl.uniform2fv(location, value);
-        return;
-      case 3:
-        gl.uniform3fv(location, value);
-        return;
-      case 4:
-        gl.uniform4fv(location, value);
-        return;
-      case 9:
-        gl.uniformMatrix3fv(location, false, value);
-        return;
-      case 16:
-        gl.uniformMatrix4fv(location, false, value);
-        return;
-      default:
-        throw new Error("Unsupported float uniform array length");
-    }
-  }
-
   private writeUniform(
     gl: GLContext,
-    location: WebGLUniformLocation,
-    value: GLUniformValue,
+    { location, type, name }: GLProgramUniform<Props>,
+    value: NumericUniform,
   ) {
-    if (typeof value === "number") {
-      gl.uniform1f(location, value);
-      return;
+    switch (type) {
+      case gl.FLOAT:
+        if (typeof value === "number") {
+          gl.uniform1f(location, value);
+          return;
+        }
+        gl.uniform1fv(location, floats(value, 1, name));
+        return;
+      case gl.FLOAT_VEC2:
+        gl.uniform2fv(location, floats(value, 2, name));
+        return;
+      case gl.FLOAT_VEC3:
+        gl.uniform3fv(location, floats(value, 3, name));
+        return;
+      case gl.FLOAT_VEC4:
+        gl.uniform4fv(location, floats(value, 4, name));
+        return;
+      case gl.FLOAT_MAT2:
+        gl.uniformMatrix2fv(location, false, floats(value, 4, name));
+        return;
+      case gl.FLOAT_MAT3:
+        gl.uniformMatrix3fv(location, false, floats(value, 9, name));
+        return;
+      case gl.FLOAT_MAT4:
+        gl.uniformMatrix4fv(location, false, floats(value, 16, name));
+        return;
+      case gl.INT:
+      case gl.BOOL:
+      case gl.SAMPLER_2D:
+      case gl.SAMPLER_CUBE:
+        if (typeof value === "number" || typeof value === "boolean") {
+          gl.uniform1i(location, Number(value));
+          return;
+        }
+        gl.uniform1iv(location, ints(value, 1, name));
+        return;
+      case gl.INT_VEC2:
+      case gl.BOOL_VEC2:
+        gl.uniform2iv(location, ints(value, 2, name));
+        return;
+      case gl.INT_VEC3:
+      case gl.BOOL_VEC3:
+        gl.uniform3iv(location, ints(value, 3, name));
+        return;
+      case gl.INT_VEC4:
+      case gl.BOOL_VEC4:
+        gl.uniform4iv(location, ints(value, 4, name));
+        return;
     }
-
-    if (typeof value === "boolean") {
-      gl.uniform1i(location, value ? 1 : 0);
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      this.writeUniformArray(gl, location, new Float32Array(value));
-      return;
-    }
-
-    if (value instanceof Float32Array || value instanceof Int32Array) {
-      this.writeUniformArray(gl, location, value);
-      return;
-    }
-
-    throw new Error("Unsupported uniform value");
+    throw new Error(`Uniform "${name}" has an unsupported GLSL type`);
   }
 
   private applyUniforms(props: Props) {
@@ -320,8 +378,7 @@ export class GLProgram<Props extends {} = {}> implements GLResource {
         continue;
       }
 
-      // Write uniform value to shader
-      this.writeUniform(gl, uniform.location, value);
+      this.writeUniform(gl, uniform, value);
     }
   }
 

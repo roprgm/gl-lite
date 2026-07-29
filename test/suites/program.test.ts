@@ -1,5 +1,5 @@
 import { GLProgram } from "gl-lite";
-import { describe, it, expect, expectPixel } from "../harness";
+import { describe, it, expect, expectPixel, captureWarnings } from "../harness";
 import {
   useRenderer,
   readCenter,
@@ -151,19 +151,97 @@ describe("GLProgram", () => {
       expectPixel(readCenter(gl, 64, 64), [0, 0, 0, 255]);
     });
 
-    it("rejects an unsupported uniform array length", () => {
+    it("writes an int uniform as an integer", () => {
+      const { renderer, gl } = useRenderer();
+      const program = renderer.program({
+        frag: uniformFrag(
+          "uniform int steps;",
+          "gl_FragColor = steps == 3 ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);",
+        ),
+        uniforms: { steps: 3 },
+      });
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectNoGLError(gl, "after writing an int uniform");
+      expectPixel(readCenter(gl, 64, 64), [0, 255, 0, 255]);
+    });
+
+    it("writes an ivec2 uniform", () => {
+      const { renderer, gl } = useRenderer();
+      const program = renderer.program({
+        frag: uniformFrag(
+          "uniform ivec2 grid;",
+          "gl_FragColor = (grid.x == 2 && grid.y == 5) ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);",
+        ),
+        uniforms: { grid: [2, 5] },
+      });
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectNoGLError(gl, "after writing an ivec2 uniform");
+      expectPixel(readCenter(gl, 64, 64), [0, 255, 0, 255]);
+    });
+
+    it("writes a mat2 uniform", () => {
+      const { renderer, gl } = useRenderer();
+      const program = renderer.program({
+        frag: uniformFrag(
+          "uniform mat2 rot;",
+          "gl_FragColor = vec4(rot[0][0], rot[1][1], 0.0, 1.0);",
+        ),
+        uniforms: { rot: [1, 0, 0, 1] },
+      });
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectNoGLError(gl, "after writing a mat2 uniform");
+      expectPixel(readCenter(gl, 64, 64), [255, 255, 0, 255]);
+    });
+
+    it("writes an array uniform of the same length as a matrix", () => {
+      const { renderer, gl } = useRenderer();
+      // Nine floats: an array, not the mat3 a length-based guess would pick.
+      const program = renderer.program({
+        frag: uniformFrag(
+          "uniform float levels[9];",
+          "gl_FragColor = vec4(levels[0], levels[4], levels[8], 1.0);",
+        ),
+        uniforms: { levels: [1, 0, 0, 0, 1, 0, 0, 0, 1] },
+      });
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectNoGLError(gl, "after writing a float[9] uniform");
+      expectPixel(readCenter(gl, 64, 64), [255, 255, 255, 255]);
+    });
+
+    it("skips a uniform the shader does not use instead of failing", () => {
+      const { renderer, gl } = useRenderer();
+      let program!: ReturnType<typeof renderer.program>;
+      const warnings = captureWarnings(() => {
+        program = renderer.program({
+          frag: uniformFrag(
+            "uniform float used;",
+            "gl_FragColor = vec4(used);",
+          ),
+          uniforms: { used: 1, neverDeclared: 5 },
+        });
+      });
+
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toContain("neverDeclared");
+
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectPixel(readCenter(gl, 64, 64), [255, 255, 255, 255]);
+    });
+
+    it("reports the uniform by name when the value has the wrong size", () => {
       const { renderer } = useRenderer();
       const program = renderer.program({
-        frag: uniformFrag("uniform vec4 value;", "gl_FragColor = value;"),
-        uniforms: { value: [1, 2, 3, 4] },
+        frag: uniformFrag("uniform vec4 tint;", "gl_FragColor = tint;"),
+        uniforms: { tint: [1, 2, 3, 4, 5] },
       });
-      // Five components map to no GLSL type gl-lite can infer.
-      const broken = renderer.program({
-        frag: uniformFrag("uniform vec4 other;", "gl_FragColor = other;"),
-        uniforms: { other: [1, 2, 3, 4, 5] },
-      });
-      expect(() => program.draw()).notToThrow();
-      expect(() => broken.draw()).toThrow("Unsupported");
+      expect(() => program.draw()).toThrow(
+        'Uniform "tint" expects a multiple of 4 values, received 5',
+      );
     });
   });
 
@@ -213,11 +291,12 @@ describe("GLProgram", () => {
       expectPixel(readCenter(gl, 64, 64), [0, 0, 0, 255]);
     });
 
-    it("reports an attribute the shader does not declare", () => {
-      const { renderer } = useRenderer();
+    it("skips an attribute the shader does not declare instead of failing", () => {
+      const { renderer, gl } = useRenderer();
       const buffer = renderer.buffer({ data: FULLSCREEN_QUAD });
-      expect(() =>
-        renderer.program({
+      let program!: ReturnType<typeof renderer.program>;
+      const warnings = captureWarnings(() => {
+        program = renderer.program({
           vert: /* glsl */ `
             attribute vec2 position;
             void main() { gl_Position = vec4(position, 0.0, 1.0); }
@@ -227,8 +306,28 @@ describe("GLProgram", () => {
             position: { buffer, size: 2 },
             missing: { buffer, size: 2 },
           },
-        }),
-      ).toThrow("Attribute not found: missing");
+        });
+      });
+
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toContain("missing");
+
+      renderer.clear([0, 0, 0, 1]);
+      program.draw();
+      expectPixel(readCenter(gl, 64, 64), [255, 0, 0, 255]);
+    });
+
+    it("stays quiet when the built-in quad does not fit a custom shader", () => {
+      const { renderer } = useRenderer();
+      const warnings = captureWarnings(() => {
+        renderer.program({
+          vert: /* glsl */ `
+            void main() { gl_Position = vec4(0.0, 0.0, 0.0, 1.0); }
+          `,
+          frag: solidFrag(1, 0, 0),
+        });
+      });
+      expect(warnings).toEqual([]);
     });
   });
 
